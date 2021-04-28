@@ -5,6 +5,7 @@ const cors = require('cors')
 const helmet = require('helmet')
 const { NODE_ENV } = require('./config')
 const winston = require('winston')
+const { v4: uuid } = require('uuid')
 
 const app = express()
 const morganOption = (NODE_ENV === 'production') ? 'tiny' : 'common';
@@ -12,6 +13,7 @@ const morganOption = (NODE_ENV === 'production') ? 'tiny' : 'common';
 app.use(morgan(morganOption))
 app.use(helmet())
 app.use(cors())
+app.use(express.json())
 
 const logger = winston.createLogger({
   level: 'info',
@@ -52,6 +54,77 @@ app.use(function validateBearerToken(req, res, next) {
 
 app.get('/', (req, res) => {
   res.send('Hello, world!')
+})
+
+app.get('/card', (req, res) => {
+  res.json(cards);
+});
+
+app.get('/list', (req, res) => {
+  res.json(lists);
+});
+
+app.get('/card/:id', (req, res) => {
+  const { id } = req.params;
+  const card = cards.find(c => c.id == id);
+
+  if (!card) {
+    logger.error(`Card with id ${id} not found.`);
+    return res
+      .status(404)
+      .send('Card not found');
+  }
+
+  res.json(card);
+});
+
+app.get('/list/:id', (req, res) => {
+  const { id } = req.params;
+  const list = lists.find(li => li.id == id);
+
+  if (!list) {
+    logger.error(`List with id ${id} not found.`);
+    return res
+      .status(404)
+      .send('List not found');
+  }
+
+  res.json(list);
+});
+
+app.post('/card', (req, res) => {
+  const { title, content } = req.body;
+
+  if (!title) {
+    logger.error(`Title is required`);
+    return res
+      .status(400)
+      .send('Invalid data');
+  }
+
+  if (!content) {
+    logger.error(`Content is required`);
+    return res
+      .status(400)
+      .send('Invalid data')
+  }
+
+  const id = uuid();
+
+  const card = {
+    id, 
+    title,
+    content
+  };
+
+  cards.push(card);
+
+  logger.info(`Card with id ${id} created`);
+
+  res
+    .status(201)
+    .location(`http://localhost:8000/card/${id}`)
+    .json(card);
 })
 
 app.use(function errorHandler(error, req, res, next) {

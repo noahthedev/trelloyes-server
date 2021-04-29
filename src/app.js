@@ -6,6 +6,7 @@ const helmet = require('helmet')
 const { NODE_ENV } = require('./config')
 const winston = require('winston')
 const { v4: uuid } = require('uuid')
+const cardRouter = require('./card/card-router')
 
 const app = express()
 const morganOption = (NODE_ENV === 'production') ? 'tiny' : 'common';
@@ -51,6 +52,8 @@ app.use(function validateBearerToken(req, res, next) {
 
   next()
 })
+
+app.use(cardRouter)
 
 app.get('/', (req, res) => {
   res.send('Hello, world!')
